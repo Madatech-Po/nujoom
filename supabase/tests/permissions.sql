@@ -19,10 +19,10 @@ begin
       where id in ('00000000-0000-4000-8000-00000000000a', '00000000-0000-4000-8000-00000000000b')) <> 2 then
     raise exception 'FAIL profiles: trigger did not create a profile per auth user';
   end if;
-  if (select display_name from public.profiles where id = '00000000-0000-4000-8000-00000000000a') <> 'Test Parent A' then
+  if (select display_name from public.profiles where id = '00000000-0000-4000-8000-00000000000a') is distinct from 'Test Parent A' then
     raise exception 'FAIL profiles: display_name not copied from metadata';
   end if;
-  if (select preferred_language from public.profiles where id = '00000000-0000-4000-8000-00000000000b') <> 'ar' then
+  if (select preferred_language from public.profiles where id = '00000000-0000-4000-8000-00000000000b') is distinct from 'ar' then
     raise exception 'FAIL profiles: default language is not ar';
   end if;
 end $$;
