@@ -2,7 +2,7 @@ import { render, renderHook, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { I18nProvider } from './I18nProvider'
 import { useI18n } from './useI18n'
-import { LANGUAGE_STORAGE_KEY, messages } from './index'
+import { LANGUAGE_STORAGE_KEY, messages, translate } from './index'
 import { LanguageToggle } from '../app/LanguageToggle'
 
 function Probe() {
@@ -97,5 +97,16 @@ describe('message files', () => {
     for (const lang of ['ar', 'en'] as const) {
       for (const value of Object.values(messages[lang])) expect(value.trim()).not.toBe('')
     }
+  })
+})
+
+describe('translate with placeholders', () => {
+  it('fills {vars} and uses Arabic-Indic digits for Arabic', () => {
+    expect(translate('en', 'stars.progress', { count: 2, max: 3 })).toBe('2 of 3 stars')
+    expect(translate('ar', 'stars.progress', { count: 2, max: 3 })).toBe('٢ من ٣ نجوم')
+  })
+
+  it('leaves unknown placeholders untouched', () => {
+    expect(translate('en', 'stars.progress', { count: 1 })).toBe('1 of {max} stars')
   })
 })

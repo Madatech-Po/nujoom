@@ -15,7 +15,7 @@ export function LanguageToggle() {
       onClick={toggleLanguage}
       aria-label={t('language.toggle.label')}
       data-testid="language-toggle"
-      className="flex size-14 items-center justify-center rounded-full bg-white text-xl font-bold text-indigo-700 shadow-md ring-2 ring-indigo-200 transition active:scale-95 focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+      className="flex size-tap items-center justify-center rounded-full bg-cloud text-xl font-bold text-night-700 shadow-pop ring-2 ring-night-200 transition motion-safe:active:translate-y-1 active:shadow-pop-pressed"
     >
       <span aria-hidden="true">{t('language.toggle.glyph')}</span>
     </button>

@@ -1,8 +1,77 @@
 @import 'tailwindcss';
 
+/*
+ * Nujoom design tokens (NUJ-12). A "night sky with stars" palette, big radii and a
+ * 56px minimum tap size for 3–7 year olds. Text/background pairs used by components
+ * meet WCAG AA (4.5:1 for text): white on night-600/meadow-700/berry-700, night-900 on cloud.
+ */
 @theme {
   /* Baloo Bhaijaan 2 covers Arabic and Latin with the same rounded, kid-friendly shapes. */
   --font-sans: 'Baloo Bhaijaan 2', 'Cairo', system-ui, sans-serif;
+
+  /* Colours */
+  --color-night-50: #eef2ff;
+  --color-night-100: #e0e7ff;
+  --color-night-200: #c7d2fe;
+  --color-night-600: #4f46e5;
+  --color-night-700: #4338ca;
+  --color-night-900: #1e1b4b;
+  --color-star-300: #fcd34d;
+  --color-star-400: #fbbf24;
+  --color-star-600: #d97706;
+  --color-meadow-100: #d1fae5;
+  --color-meadow-700: #047857;
+  --color-berry-100: #ffe4e6;
+  --color-berry-700: #be123c;
+  --color-cloud: #ffffff;
+
+  /* Sizes */
+  --spacing-tap: 3.5rem; /* 56px: minimum touch target → size-tap, min-h-tap, min-w-tap */
+  --spacing-tap-lg: 4.5rem; /* 72px: primary actions for the youngest children */
+
+  /* Radii */
+  --radius-kid: 1.5rem;
+  --radius-bubble: 2.25rem;
+
+  /* Shadows: a soft "pressable" bottom edge */
+  --shadow-pop: 0 6px 0 0 rgb(30 27 75 / 0.18);
+  --shadow-pop-pressed: 0 2px 0 0 rgb(30 27 75 / 0.18);
+  --shadow-float: 0 12px 32px -8px rgb(30 27 75 / 0.35);
+
+  /* Type scale (bigger than default; kids read large type) */
+  --text-kid-sm: 1.125rem;
+  --text-kid-sm--line-height: 1.6;
+  --text-kid-md: 1.5rem;
+  --text-kid-md--line-height: 1.5;
+  --text-kid-lg: 2rem;
+  --text-kid-lg--line-height: 1.35;
+  --text-kid-xl: 3rem;
+  --text-kid-xl--line-height: 1.2;
+
+  /* Motion */
+  --animate-pop-in: pop-in 400ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-twinkle: twinkle 1.2s ease-in-out infinite;
+
+  @keyframes pop-in {
+    from {
+      transform: scale(0.6);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes twinkle {
+    0%,
+    100% {
+      transform: scale(1) rotate(0deg);
+    }
+    50% {
+      transform: scale(1.15) rotate(8deg);
+    }
+  }
 }
 
 html,
@@ -12,6 +81,23 @@ body,
 }
 
 body {
-  @apply font-sans antialiased;
+  @apply bg-night-50 font-sans text-night-900 antialiased;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Visible focus everywhere, for keyboard and switch users. */
+:focus-visible {
+  outline: 4px solid var(--color-star-400);
+  outline-offset: 3px;
+}
+
+/* Honour reduced motion globally (components also use motion-safe: variants). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
 }
