@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Nujoom app icon: a big friendly star on a night-sky square (NUJ-13). -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4f46e5"/>
+      <stop offset="1" stop-color="#1e1b4b"/>
+    </linearGradient>
+    <linearGradient id="star" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fde68a"/>
+      <stop offset="1" stop-color="#f59e0b"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#sky)"/>
+  <circle cx="110" cy="120" r="10" fill="#fef3c7" opacity="0.8"/>
+  <circle cx="400" cy="96" r="7" fill="#fef3c7" opacity="0.7"/>
+  <circle cx="430" cy="400" r="9" fill="#fef3c7" opacity="0.6"/>
+  <circle cx="86" cy="392" r="6" fill="#fef3c7" opacity="0.6"/>
+  <path d="M256 92l45.6 92.4 102 14.8-73.8 71.9 17.4 101.6L256 324.8l-91.2 47.9 17.4-101.6-73.8-71.9 102-14.8z"
+        fill="url(#star)" stroke="#fffbeb" stroke-width="14" stroke-linejoin="round"/>
+</svg>

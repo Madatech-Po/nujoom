@@ -1,0 +1,12 @@
+{
+  // Cloudflare Workers static assets: serves the Vite build in dist/ (NUJ-13).
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "nujoom",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./dist",
+    // Unknown paths return index.html so deep links work in the SPA.
+    "not_found_handling": "single-page-application"
+  },
+  "observability": { "enabled": true }
+}
