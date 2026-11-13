@@ -40,6 +40,21 @@ for (const c of cases) {
   })
 }
 
+test('font is self-hosted: Baloo Bhaijaan 2 loads with no request to Google', async ({ page }) => {
+  const external: string[] = []
+  page.on('request', (req) => {
+    const host = new URL(req.url()).hostname
+    if (host !== 'localhost' && host !== '127.0.0.1') external.push(req.url())
+  })
+  await page.goto('/', { waitUntil: 'load' })
+  const loaded = await page.evaluate(async () => {
+    await document.fonts.ready
+    return document.fonts.check('700 32px "Baloo Bhaijaan 2"', 'نجوم')
+  })
+  expect(loaded).toBe(true)
+  expect(external).toEqual([])
+})
+
 test('toggle switches language and the choice survives a reload', async ({ page }) => {
   await page.goto('/', { waitUntil: 'load' })
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
