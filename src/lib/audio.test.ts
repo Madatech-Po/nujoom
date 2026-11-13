@@ -182,3 +182,28 @@ describe('AudioEngine first tap on iOS (unlock + play in the same tap)', () => {
     }
   })
 })
+
+describe('AudioEngine unlock retries on every gesture', () => {
+  it('calls resume() again when the first one never settles, and plays once the second resolves', async () => {
+    const { engine, fake } = makeEngine('suspended')
+    // First gesture (e.g. pointerdown without user activation): resume never settles.
+    fake.ctx.resume.mockImplementationOnce(() => new Promise<void>(() => {}))
+    engine.unlock()
+    expect(fake.ctx.resume).toHaveBeenCalledTimes(1)
+
+    // Second, real gesture: resume succeeds shortly after.
+    fake.ctx.resume.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) =>
+          setTimeout(() => {
+            fake.ctx.state = 'running'
+            resolve()
+          }, 20),
+        ),
+    )
+    engine.unlock()
+    expect(fake.ctx.resume).toHaveBeenCalledTimes(2)
+
+    await expect(engine.play('/a.mp3')).resolves.toBe(true)
+  })
+})
