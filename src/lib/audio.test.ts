@@ -131,3 +131,12 @@ describe('installAudioUnlock', () => {
     expect(removeSpy).toHaveBeenCalled()
   })
 })
+
+describe('AudioEngine review fixes', () => {
+  it('play() returns false right away when the context is locked, even if resume() never settles', async () => {
+    const { engine, fake } = makeEngine('suspended')
+    fake.ctx.resume.mockImplementation(() => new Promise<void>(() => {}))
+    await expect(engine.play('/a.mp3')).resolves.toBe(false)
+    expect(fake.started).toHaveLength(0)
+  })
+})

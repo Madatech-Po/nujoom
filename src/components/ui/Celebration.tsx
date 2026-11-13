@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useI18n } from '../../i18n/useI18n'
 import { audio, type AudioEngine } from '../../lib/audio'
 
@@ -34,14 +34,19 @@ export function Celebration({
   onDone,
 }: CelebrationProps) {
   const { t } = useI18n()
+  // Keep the latest callback without restarting the sound/timer when its identity changes.
+  const onDoneRef = useRef(onDone)
+  useEffect(() => {
+    onDoneRef.current = onDone
+  }, [onDone])
 
   useEffect(() => {
     if (!show) return
     if (sound) void engine.play(sound)
-    if (!durationMs || !onDone) return
-    const timer = window.setTimeout(onDone, durationMs)
+    if (!durationMs) return
+    const timer = window.setTimeout(() => onDoneRef.current?.(), durationMs)
     return () => window.clearTimeout(timer)
-  }, [show, sound, engine, durationMs, onDone])
+  }, [show, sound, engine, durationMs])
 
   if (!show) return null
 
