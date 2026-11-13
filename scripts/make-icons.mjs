@@ -2,6 +2,7 @@
 // Renders public/icons/icon.svg to the PNG sizes the web manifest and iOS need (NUJ-13).
 // Run after changing the SVG:  node scripts/make-icons.mjs
 import { readFile } from 'node:fs/promises'
+import { fileURLToPath } from 'node:url'
 import { chromium } from '@playwright/test'
 
 const svg = await readFile(new URL('../public/icons/icon.svg', import.meta.url), 'utf8')
@@ -23,7 +24,7 @@ try {
         `<div style="width:${inner}px;height:${inner}px">${svg.replace('<svg ', `<svg width="${inner}" height="${inner}" `)}</div>` +
         `</body></html>`,
     )
-    await page.screenshot({ path: new URL(`../public/icons/${file}`, import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1') })
+    await page.screenshot({ path: fileURLToPath(new URL(`../public/icons/${file}`, import.meta.url)) })
     await page.close()
     console.log(`wrote public/icons/${file}`)
   }
