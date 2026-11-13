@@ -102,8 +102,11 @@ export class AudioEngine {
   unlock(): void {
     const ctx = this.context()
     if (!ctx) return
-    if (ctx.state !== 'running' && !this.resuming) {
-      // Keep the pending resume so a play() in the same tap can wait for it (briefly).
+    if (ctx.state !== 'running') {
+      // Call resume() on EVERY gesture: on iOS an earlier one (e.g. from pointerdown, which may
+      // not count as user activation) can stay pending forever, and only a later real gesture
+      // starts the context. Keep only the latest promise so a play() in the same tap can wait
+      // for it (briefly).
       const pending: Promise<void> = ctx
         .resume()
         .catch(() => undefined)
