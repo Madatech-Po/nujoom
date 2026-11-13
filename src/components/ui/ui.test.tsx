@@ -247,3 +247,23 @@ describe('review fixes', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 })
+
+describe('Modal must-choose (hideCloseButton)', () => {
+  it('ignores backdrop taps and Escape; only a choice inside closes it', async () => {
+    const onClose = vi.fn()
+    wrap(
+      <Modal open hideCloseButton title="Pick one" onClose={onClose}>
+        <button onClick={onClose}>Yes</button>
+      </Modal>,
+    )
+    expect(screen.getByRole('alertdialog', { name: 'Pick one' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: messages.ar['common.close'] })).toBeNull()
+
+    await userEvent.click(screen.getByTestId('modal-backdrop'))
+    await userEvent.keyboard('{Escape}')
+    expect(onClose).not.toHaveBeenCalled()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Yes' }))
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+})
