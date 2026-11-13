@@ -71,6 +71,19 @@ describe('I18nProvider', () => {
     expect(toggle).toHaveTextContent(messages.ar['language.toggle.glyph'])
   })
 
+  it('marks the toggle with the target language so screen readers use the right voice', async () => {
+    renderWithToggle()
+    const toggle = screen.getByTestId('language-toggle')
+    // Arabic page: the label "Switch to English" is English.
+    expect(document.documentElement).toHaveAttribute('lang', 'ar')
+    expect(toggle).toHaveAttribute('lang', 'en')
+
+    await userEvent.click(toggle)
+    // English page: the label "التبديل إلى العربية" is Arabic.
+    expect(document.documentElement).toHaveAttribute('lang', 'en')
+    expect(toggle).toHaveAttribute('lang', 'ar')
+  })
+
   it('throws a clear error when used outside the provider', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
     expect(() => renderHook(() => useI18n())).toThrow(/I18nProvider/)
