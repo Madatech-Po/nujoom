@@ -174,3 +174,76 @@ describe('MuteToggle', () => {
     expect(button).toHaveAttribute('aria-pressed', 'true')
   })
 })
+
+describe('review fixes', () => {
+  it('Celebration: a new onDone identity does not restart the timer', () => {
+    vi.useFakeTimers()
+    const first = vi.fn()
+    const second = vi.fn()
+    const { rerender } = wrap(<Celebration show durationMs={1000} onDone={first} />)
+    act(() => vi.advanceTimersByTime(600))
+    rerender(
+      <I18nProvider>
+        <Celebration show durationMs={1000} onDone={second} />
+      </I18nProvider>,
+    )
+    act(() => vi.advanceTimersByTime(400))
+    expect(first).not.toHaveBeenCalled()
+    expect(second).toHaveBeenCalledOnce()
+    vi.useRealTimers()
+  })
+
+  it('Modal: Tab and Shift+Tab stay inside, the app root is inert, focus comes back', async () => {
+    const appRoot = document.createElement('div')
+    appRoot.id = 'root'
+    const opener = document.createElement('button')
+    appRoot.appendChild(opener)
+    document.body.appendChild(appRoot)
+    opener.focus()
+
+    const view = render(
+      <I18nProvider>
+        <Modal open title="t" onClose={() => {}}>
+          <button>one</button>
+          <button>two</button>
+        </Modal>
+      </I18nProvider>,
+      { container: document.body.appendChild(document.createElement('div')) },
+    )
+    expect(appRoot).toHaveAttribute('inert')
+
+    const close = screen.getByRole('button', { name: messages.ar['common.close'] })
+    const two = screen.getByRole('button', { name: 'two' })
+    two.focus()
+    await userEvent.tab()
+    expect(close).toHaveFocus()
+    await userEvent.tab({ shift: true })
+    expect(two).toHaveFocus()
+
+    view.unmount()
+    expect(appRoot).not.toHaveAttribute('inert')
+    expect(opener).toHaveFocus()
+    appRoot.remove()
+  })
+
+  it('Modal: a new onClose identity does not move focus while open', async () => {
+    const { rerender } = wrap(
+      <Modal open title="t" onClose={() => {}}>
+        <button>inside</button>
+      </Modal>,
+    )
+    const inside = screen.getByRole('button', { name: 'inside' })
+    inside.focus()
+    const onClose = vi.fn()
+    rerender(
+      <I18nProvider>
+        <Modal open title="t" onClose={onClose}>
+          <button>inside</button>
+        </Modal>
+      </I18nProvider>,
+    )
+    expect(inside).toHaveFocus()
+    await userEvent.keyboard('{Escape}')
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+})

@@ -121,8 +121,12 @@ export class AudioEngine {
     const ctx = this.context()
     if (!ctx) return false
     try {
-      if (ctx.state !== 'running') await ctx.resume()
-      if (ctx.state !== 'running') return false
+      if (ctx.state !== 'running') {
+        // Never await resume() here: on iOS it can stay pending until a user gesture.
+        // unlock() (called from a gesture) is what actually starts the context.
+        void ctx.resume().catch(() => undefined)
+        return false
+      }
       const buffer = await this.load(url)
       if (this.muted) return false
       const source = ctx.createBufferSource()

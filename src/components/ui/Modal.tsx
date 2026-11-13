@@ -13,25 +13,66 @@ export interface ModalProps {
   hideCloseButton?: boolean
 }
 
-/** Simple accessible dialog: portal, backdrop, Escape to close, focus moved in and restored. */
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
+/**
+ * Accessible dialog: portal, backdrop, Escape to close, Tab/Shift+Tab kept inside,
+ * the app behind it made inert, and focus restored on close.
+ */
 export function Modal({ open, onClose, title, children, hideCloseButton = false }: ModalProps) {
   const { t } = useI18n()
   const titleId = useId()
   const panelRef = useRef<HTMLDivElement>(null)
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
 
+  // Focus in on open, restore on close; make the app behind the dialog inert.
   useEffect(() => {
     if (!open) return
     const previouslyFocused = document.activeElement as HTMLElement | null
+    const appRoot = document.getElementById('root')
+    const wasInert = appRoot?.hasAttribute('inert') ?? false
+    appRoot?.setAttribute('inert', '')
     panelRef.current?.focus()
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', onKey)
     return () => {
-      document.removeEventListener('keydown', onKey)
+      if (appRoot && !wasInert) appRoot.removeAttribute('inert')
       previouslyFocused?.focus?.()
     }
-  }, [open, onClose])
+  }, [open])
+
+  // Escape closes; Tab / Shift+Tab wrap within the dialog.
+  useEffect(() => {
+    if (!open) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onCloseRef.current()
+        return
+      }
+      if (event.key !== 'Tab' || !panelRef.current) return
+      const focusable = Array.from(panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE))
+      if (focusable.length === 0) {
+        event.preventDefault()
+        panelRef.current.focus()
+        return
+      }
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      const active = document.activeElement
+      const inside = panelRef.current.contains(active)
+      if (event.shiftKey && (active === first || !inside || active === panelRef.current)) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && (active === last || !inside)) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open])
 
   if (!open) return null
 
@@ -41,7 +82,7 @@ export function Modal({ open, onClose, title, children, hideCloseButton = false 
         aria-hidden="true"
         data-testid="modal-backdrop"
         className="absolute inset-0 bg-night-900/50"
-        onClick={onClose}
+        onClick={() => onCloseRef.current()}
       />
       <div
         ref={panelRef}
@@ -56,7 +97,7 @@ export function Modal({ open, onClose, title, children, hideCloseButton = false 
             {title}
           </h2>
           {hideCloseButton ? null : (
-            <IconButton label={t('common.close')} icon="✕" onClick={onClose} />
+            <IconButton label={t('common.close')} icon="✕" onClick={() => onCloseRef.current()} />
           )}
         </div>
         {children}
