@@ -6,11 +6,11 @@ function Home() {
   const { t } = useI18n()
   return (
     <section className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
-      <span aria-hidden="true" className="text-7xl">
+      <span aria-hidden="true" className="text-7xl motion-safe:animate-twinkle">
         ⭐
       </span>
-      <h1 className="text-5xl font-bold text-indigo-700">{t('app.name')}</h1>
-      <p className="text-xl">{t('home.tagline')}</p>
+      <h1 className="text-kid-xl font-bold text-night-700">{t('app.name')}</h1>
+      <p className="text-kid-md">{t('home.tagline')}</p>
     </section>
   )
 }

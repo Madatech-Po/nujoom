@@ -2,5 +2,11 @@
   "app.name": "نجوم",
   "home.tagline": "نتعلم الحروف ونجمع النجوم",
   "language.toggle.glyph": "EN",
-  "language.toggle.label": "Switch to English"
+  "language.toggle.label": "Switch to English",
+  "audio.listen": "اسمع",
+  "audio.mute": "اكتم الصوت",
+  "audio.unmute": "شغّل الصوت",
+  "common.close": "إغلاق",
+  "stars.progress": "{count} من {max} نجوم",
+  "celebration.default": "برافو!"
 }

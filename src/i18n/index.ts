@@ -16,8 +16,19 @@ export function isLanguage(value: unknown): value is Language {
   return value === 'ar' || value === 'en'
 }
 
-export function translate(lang: Language, key: MessageKey): string {
-  return messages[lang][key]
+export type MessageVars = Record<string, string | number>
+
+const numberLocale: Record<Language, string> = { ar: 'ar-EG', en: 'en' }
+
+/** Looks up a message and fills `{name}` placeholders; numbers use the language's digits. */
+export function translate(lang: Language, key: MessageKey, vars?: MessageVars): string {
+  const template = messages[lang][key]
+  if (!vars) return template
+  return template.replace(/\{(\w+)\}/g, (match, name: string) => {
+    const value = vars[name]
+    if (value === undefined) return match
+    return typeof value === 'number' ? value.toLocaleString(numberLocale[lang]) : value
+  })
 }
 
 export function readStoredLanguage(): Language {

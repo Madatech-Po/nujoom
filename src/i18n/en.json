@@ -2,5 +2,11 @@
   "app.name": "Nujoom",
   "home.tagline": "Learn letters, collect stars",
   "language.toggle.glyph": "ع",
-  "language.toggle.label": "التبديل إلى العربية"
+  "language.toggle.label": "التبديل إلى العربية",
+  "audio.listen": "Listen",
+  "audio.mute": "Mute sound",
+  "audio.unmute": "Turn sound on",
+  "common.close": "Close",
+  "stars.progress": "{count} of {max} stars",
+  "celebration.default": "Well done!"
 }

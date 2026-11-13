@@ -25,7 +25,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     () => ({
       lang,
       dir: languageDirection[lang],
-      t: (key) => translate(lang, key),
+      t: (key, vars) => translate(lang, key, vars),
       setLanguage,
       toggleLanguage: () => setLanguage(lang === 'ar' ? 'en' : 'ar'),
     }),

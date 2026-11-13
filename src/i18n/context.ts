@@ -1,10 +1,10 @@
 import { createContext } from 'react'
-import type { Direction, Language, MessageKey } from './index'
+import type { Direction, Language, MessageKey, MessageVars } from './index'
 
 export interface I18nValue {
   lang: Language
   dir: Direction
-  t: (key: MessageKey) => string
+  t: (key: MessageKey, vars?: MessageVars) => string
   setLanguage: (lang: Language) => void
   toggleLanguage: () => void
 }
