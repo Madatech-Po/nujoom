@@ -1,4 +1,6 @@
 {
   "app.name": "نجوم",
-  "home.tagline": "نتعلم الحروف ونجمع النجوم"
+  "home.tagline": "نتعلم الحروف ونجمع النجوم",
+  "language.toggle.glyph": "EN",
+  "language.toggle.label": "Switch to English"
 }

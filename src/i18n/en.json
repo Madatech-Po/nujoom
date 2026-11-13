@@ -1,4 +1,6 @@
 {
   "app.name": "Nujoom",
-  "home.tagline": "Learn letters, collect stars"
+  "home.tagline": "Learn letters, collect stars",
+  "language.toggle.glyph": "ع",
+  "language.toggle.label": "التبديل إلى العربية"
 }
