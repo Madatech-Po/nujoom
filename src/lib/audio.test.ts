@@ -1,4 +1,10 @@
-import { AudioEngine, MUTE_STORAGE_KEY, installAudioUnlock, type MinimalAudioContext } from './audio'
+import {
+  AudioEngine,
+  MUTE_STORAGE_KEY,
+  RESUME_WAIT_MS,
+  installAudioUnlock,
+  type MinimalAudioContext,
+} from './audio'
 
 function fakeContext(initialState = 'suspended') {
   const started: unknown[] = []
@@ -138,5 +144,41 @@ describe('AudioEngine review fixes', () => {
     fake.ctx.resume.mockImplementation(() => new Promise<void>(() => {}))
     await expect(engine.play('/a.mp3')).resolves.toBe(false)
     expect(fake.started).toHaveLength(0)
+  })
+})
+
+describe('AudioEngine first tap on iOS (unlock + play in the same tap)', () => {
+  it('plays once the resume started by unlock() resolves, even though resume is async', async () => {
+    const { engine, fake } = makeEngine('suspended')
+    fake.ctx.resume.mockImplementation(
+      () =>
+        new Promise<void>((resolve) =>
+          setTimeout(() => {
+            fake.ctx.state = 'running'
+            resolve()
+          }, 20),
+        ),
+    )
+    engine.unlock() // same tick as play(), like ListenButton.handleClick
+    await expect(engine.play('/a.mp3')).resolves.toBe(true)
+    expect(fake.started).toHaveLength(2) // silent unlock buffer + the sound
+  })
+
+  it('gives up after the cap when that resume never settles', async () => {
+    vi.useFakeTimers()
+    try {
+      const { engine, fake } = makeEngine('suspended')
+      fake.ctx.resume.mockImplementation(() => new Promise<void>(() => {}))
+      engine.unlock()
+      let result: boolean | undefined
+      void engine.play('/a.mp3').then((r) => (result = r))
+      await vi.advanceTimersByTimeAsync(RESUME_WAIT_MS - 1)
+      expect(result).toBeUndefined()
+      await vi.advanceTimersByTimeAsync(1)
+      expect(result).toBe(false)
+      expect(fake.started).toHaveLength(1) // only the silent unlock buffer
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

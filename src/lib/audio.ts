@@ -49,8 +49,24 @@ function defaultStorage(): Pick<Storage, 'getItem' | 'setItem'> | null {
   }
 }
 
+/** Longest time play() waits for an in-progress unlock before giving up (ms). */
+export const RESUME_WAIT_MS = 300
+
+/** Resolves when `promise` settles or after `ms`, whichever comes first. Never rejects. */
+function waitAtMost(promise: Promise<unknown>, ms: number): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeout = new Promise<void>((resolve) => {
+    timer = setTimeout(resolve, ms)
+  })
+  return Promise.race([promise.then(() => undefined, () => undefined), timeout]).finally(() =>
+    clearTimeout(timer),
+  )
+}
+
 export class AudioEngine {
   private ctx: MinimalAudioContext | null | undefined
+  /** The resume() started by the latest unlock(), while it is still pending. */
+  private resuming: Promise<void> | null = null
   private readonly buffers = new Map<string, Promise<AudioBuffer>>()
   private readonly playing = new Set<AudioBufferSourceNode>()
   private readonly listeners = new Set<Listener>()
@@ -86,7 +102,16 @@ export class AudioEngine {
   unlock(): void {
     const ctx = this.context()
     if (!ctx) return
-    void ctx.resume().catch(() => undefined)
+    if (ctx.state !== 'running' && !this.resuming) {
+      // Keep the pending resume so a play() in the same tap can wait for it (briefly).
+      const pending: Promise<void> = ctx
+        .resume()
+        .catch(() => undefined)
+        .finally(() => {
+          if (this.resuming === pending) this.resuming = null
+        })
+      this.resuming = pending
+    }
     // Classic iOS trick: start a 1-sample silent buffer during the gesture.
     try {
       const source = ctx.createBufferSource()
@@ -122,10 +147,15 @@ export class AudioEngine {
     if (!ctx) return false
     try {
       if (ctx.state !== 'running') {
-        // Never await resume() here: on iOS it can stay pending until a user gesture.
-        // unlock() (called from a gesture) is what actually starts the context.
-        void ctx.resume().catch(() => undefined)
-        return false
+        if (this.resuming) {
+          // unlock() just ran in this tap (e.g. ListenButton): give resume() a short,
+          // capped wait so the very first tap on iOS is not silent.
+          await waitAtMost(this.resuming, RESUME_WAIT_MS)
+        } else {
+          // Never wait on a resume() outside a gesture: on iOS it can stay pending forever.
+          void ctx.resume().catch(() => undefined)
+        }
+        if (ctx.state !== 'running') return false
       }
       const buffer = await this.load(url)
       if (this.muted) return false

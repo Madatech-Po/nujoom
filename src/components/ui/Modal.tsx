@@ -9,7 +9,11 @@ export interface ModalProps {
   /** Visible title; also the dialog's accessible name. */
   title: string
   children: ReactNode
-  /** Hide the ✕ button when the child must pick an option. Escape still closes. */
+  /**
+   * "Must choose" dialog: hides the ✕ button, and neither a backdrop tap nor Escape closes it,
+   * so a child cannot dismiss it by accident. The content must offer the choices (each one
+   * closing the dialog itself). Announced as an alertdialog.
+   */
   hideCloseButton?: boolean
 }
 
@@ -28,6 +32,10 @@ export function Modal({ open, onClose, title, children, hideCloseButton = false 
   useEffect(() => {
     onCloseRef.current = onClose
   }, [onClose])
+  const dismissible = !hideCloseButton
+  const dismiss = () => {
+    if (dismissible) onCloseRef.current()
+  }
 
   // Focus in on open, restore on close; make the app behind the dialog inert.
   useEffect(() => {
@@ -48,7 +56,7 @@ export function Modal({ open, onClose, title, children, hideCloseButton = false 
     if (!open) return
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        onCloseRef.current()
+        if (dismissible) onCloseRef.current()
         return
       }
       if (event.key !== 'Tab' || !panelRef.current) return
@@ -72,7 +80,7 @@ export function Modal({ open, onClose, title, children, hideCloseButton = false 
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [open])
+  }, [open, dismissible])
 
   if (!open) return null
 
@@ -82,11 +90,11 @@ export function Modal({ open, onClose, title, children, hideCloseButton = false 
         aria-hidden="true"
         data-testid="modal-backdrop"
         className="absolute inset-0 bg-night-900/50"
-        onClick={() => onCloseRef.current()}
+        onClick={dismiss}
       />
       <div
         ref={panelRef}
-        role="dialog"
+        role={dismissible ? 'dialog' : 'alertdialog'}
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
@@ -96,9 +104,9 @@ export function Modal({ open, onClose, title, children, hideCloseButton = false 
           <h2 id={titleId} className="text-kid-lg font-bold text-night-700">
             {title}
           </h2>
-          {hideCloseButton ? null : (
-            <IconButton label={t('common.close')} icon="✕" onClick={() => onCloseRef.current()} />
-          )}
+          {dismissible ? (
+            <IconButton label={t('common.close')} icon="✕" onClick={dismiss} />
+          ) : null}
         </div>
         {children}
       </div>
