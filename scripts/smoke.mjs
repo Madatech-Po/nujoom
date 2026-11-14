@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 // Post-deploy smoke test (NUJ-13): the live site serves the app shell, deep links fall back
 // to index.html, and the manifest + icons are real files (not the SPA's HTML fallback).
+//
+// Right after a deploy (and especially the very first one, while Cloudflare activates the
+// workers.dev subdomain) the URL can answer 404 for a short while, so failed rounds are retried
+// until SMOKE_RETRY_SECONDS (default 90) have passed, SMOKE_RETRY_INTERVAL seconds apart (default 10).
+//
 // Usage: node scripts/smoke.mjs https://nujoom.<account>.workers.dev
 
 const base = (process.argv[2] || process.env.SMOKE_URL || '').replace(/\/+$/, '')
@@ -9,22 +14,9 @@ if (!/^https?:\/\//.test(base)) {
   process.exit(2)
 }
 
+const retrySeconds = Number(process.env.SMOKE_RETRY_SECONDS ?? 90)
+const intervalSeconds = Number(process.env.SMOKE_RETRY_INTERVAL ?? 10)
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
-const failures = []
-
-/** Fetches `path` and runs `test(res, bytes)`; `test` returns a problem string or null. */
-async function check(path, test) {
-  const url = `${base}${path}`
-  try {
-    const res = await fetch(url, { redirect: 'follow' })
-    const bytes = new Uint8Array(await res.arrayBuffer())
-    const problem = test(res, bytes)
-    if (problem) failures.push(`${path}: ${problem}`)
-    else console.log(`ok   ${path}`)
-  } catch (error) {
-    failures.push(`${path}: ${error.message}`)
-  }
-}
 
 const text = (bytes) => new TextDecoder().decode(bytes)
 
@@ -36,6 +28,16 @@ const isShell = (res, bytes) => {
   return null
 }
 
+const isManifest = (res, bytes) => {
+  if (res.status !== 200) return `status ${res.status}`
+  try {
+    const manifest = JSON.parse(text(bytes))
+    return manifest.icons?.length ? null : 'no icons in manifest'
+  } catch {
+    return 'manifest is not JSON'
+  }
+}
+
 const isPng = (res, bytes) => {
   if (res.status !== 200) return `status ${res.status}`
   const type = res.headers.get('content-type') || ''
@@ -44,23 +46,49 @@ const isPng = (res, bytes) => {
   return null
 }
 
-await check('/', isShell)
-await check('/some/deep/link', isShell)
-await check('/manifest.webmanifest', (res, bytes) => {
-  if (res.status !== 200) return `status ${res.status}`
-  try {
-    const manifest = JSON.parse(text(bytes))
-    return manifest.icons?.length ? null : 'no icons in manifest'
-  } catch {
-    return 'manifest is not JSON'
+const checks = [
+  ['/', isShell],
+  ['/some/deep/link', isShell],
+  ['/manifest.webmanifest', isManifest],
+  ['/icons/icon-192.png', isPng],
+  ['/icons/icon-512.png', isPng],
+  ['/icons/apple-touch-icon.png', isPng],
+]
+
+/** Runs every check once; returns the list of problems (empty = pass). */
+async function runRound() {
+  const failures = []
+  for (const [path, test] of checks) {
+    try {
+      const res = await fetch(`${base}${path}`, { redirect: 'follow', cache: 'no-store' })
+      const bytes = new Uint8Array(await res.arrayBuffer())
+      const problem = test(res, bytes)
+      if (problem) failures.push(`${path}: ${problem}`)
+    } catch (error) {
+      failures.push(`${path}: ${error.message}`)
+    }
   }
-})
-for (const icon of ['/icons/icon-192.png', '/icons/icon-512.png', '/icons/apple-touch-icon.png']) {
-  await check(icon, isPng)
+  return failures
+}
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const deadline = Date.now() + retrySeconds * 1000
+let attempt = 0
+let failures
+
+for (;;) {
+  attempt += 1
+  failures = await runRound()
+  if (failures.length === 0 || Date.now() + intervalSeconds * 1000 > deadline) break
+  console.log(`attempt ${attempt}: ${failures.length} check(s) failing, retrying in ${intervalSeconds}s…`)
+  await sleep(intervalSeconds * 1000)
 }
 
 if (failures.length) {
-  console.error('\nSmoke test FAILED:\n' + failures.map((f) => `  - ${f}`).join('\n'))
+  console.error(
+    `\nSmoke test FAILED after ${attempt} attempt(s):\n` + failures.map((f) => `  - ${f}`).join('\n'),
+  )
   process.exit(1)
 }
-console.log(`\nSmoke test passed for ${base}`)
+for (const [path] of checks) console.log(`ok   ${path}`)
+console.log(`\nSmoke test passed for ${base} (attempt ${attempt})`)
